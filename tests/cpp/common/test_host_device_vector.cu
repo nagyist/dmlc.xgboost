@@ -4,9 +4,10 @@
 #include <gtest/gtest.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/counting_iterator.h>
-
-#include "../../../src/common/device_helpers.cuh"
 #include <xgboost/host_device_vector.h>
+
+#include "../../../src/common/cuda_rt_utils.h"  // for SetDevice
+#include "../../../src/common/device_helpers.cuh"
 
 namespace xgboost::common {
 namespace {
@@ -99,7 +100,7 @@ void CheckHost(HostDeviceVector<int> *v, GPUAccess access) {
 }
 
 void TestHostDeviceVector(size_t n, DeviceOrd device) {
-  HostDeviceVectorSetDeviceHandler hdvec_dev_hndlr(SetDevice);
+  HostDeviceVectorSetDeviceHandler hdvec_dev_hndlr(curt::SetDevice);
   HostDeviceVector<int> v;
   InitHostDeviceVector(n, device, &v);
   CheckDevice(&v, n, 0, GPUAccess::kRead);
@@ -118,7 +119,7 @@ TEST(HostDeviceVector, Basic) {
 TEST(HostDeviceVector, Copy) {
   size_t n = 1001;
   auto device = DeviceOrd::CUDA(0);
-  HostDeviceVectorSetDeviceHandler hdvec_dev_hndlr(SetDevice);
+  HostDeviceVectorSetDeviceHandler hdvec_dev_hndlr(curt::SetDevice);
 
   HostDeviceVector<int> v;
   {
@@ -145,7 +146,7 @@ TEST(HostDeviceVector, SetDevice) {
 
   vec.SetDevice(device);
   ASSERT_EQ(vec.Size(), h_vec.size());
-  auto span = vec.DeviceSpan();  // sync to device
+  vec.DeviceSpan();  // sync to device
 
   vec.SetDevice(DeviceOrd::CPU());  // pull back to cpu.
   ASSERT_EQ(vec.Size(), h_vec.size());
